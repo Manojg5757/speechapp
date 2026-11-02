@@ -172,7 +172,8 @@ function score(q,p){
  for(const k of p.keys){
   let s=0;
   if(k===q)s=100;
-  else if(k.includes(q)||q.includes(k)){const r=Math.min(k.length,q.length)/Math.max(k.length,q.length);s=60+30*r}
+  // q is the start of a word in k (typing in progress), or k is a whole word/phrase in q — not a fragment inside a word
+  else if((" "+k).includes(" "+q)||(" "+q+" ").includes(" "+k+" ")){const r=Math.min(k.length,q.length)/Math.max(k.length,q.length);s=60+30*r}
   else{const kt=k.split(" ");let tot=0;for(const t of qt){let m=0;for(const u of kt)m=Math.max(m,sim(t,u));tot+=m}s=70*(tot/qt.length)}
   if(s>best)best=s;
  }
