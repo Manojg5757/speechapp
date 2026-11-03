@@ -108,3 +108,9 @@ body{margin:0}
 .row .where{grid-column:3}
 .swatch{display:inline-block;width:14px;height:14px;border-radius:50%;margin-right:6px;vertical-align:-1px;border:1px solid var(--line)}
 @media (max-width:380px){.pic{width:76px;height:76px}.pic svg{width:60px;height:60px}}
+.photo{background:#fff}
+.photo img{object-fit:contain}
+.credits{font-size:13px;color:var(--muted)}
+.credits summary{cursor:pointer}
+.credits ul{margin:6px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.credits a{color:inherit;overflow-wrap:anywhere}

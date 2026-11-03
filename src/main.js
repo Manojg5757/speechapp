@@ -3,6 +3,7 @@ import { CATS, SHELVES } from "./products.js";
 import { ITEMS, search, topScore } from "./search.js";
 import { speak, speechText, hasTamilVoice, line, voicesReady } from "./speak.js";
 import { productImage } from "./icons.js";
+import { CREDITS } from "./credits.js";
 
 const $ = id => document.getElementById(id);
 let cat = "all", speakOn = true, lastSpoken = "", timer;
@@ -173,6 +174,10 @@ micBtn.onclick = () => {
     rec.start();
   } catch (e) { fallback(); }
 };
+
+$("credits").innerHTML = CREDITS.map(c =>
+  `<li><a href="${esc(c.page)}" target="_blank" rel="noopener">${esc(c.title)}</a> — ${esc(c.artist)}, ` +
+  (c.licenseUrl ? `<a href="${esc(c.licenseUrl)}" target="_blank" rel="noopener">${esc(c.license)}</a>` : esc(c.license)) + `</li>`).join("");
 
 $("q").value = "elbow"; render(false);
 
