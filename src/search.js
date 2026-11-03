@@ -117,7 +117,7 @@ function nameScore(q, keys) {
 const list = x => (x == null ? [] : Array.isArray(x) ? x : [x]);
 const uniq = a => [...new Set(a.filter(Boolean))];
 
-export const ITEMS = PRODUCTS.map((p, i) => {
+const build = products => products.map((p, i) => {
   const names = list(p.n), tas = list(p.ta);
   // "Rawl plug / gitti (pack)" counts as the full text and as each part, with or without the brackets
   const all = [...names, ...tas, ...list(p.a)]
@@ -136,6 +136,10 @@ export const ITEMS = PRODUCTS.map((p, i) => {
     keys: uniq(all.map(s => stripSize(canon(s)))),
   };
 });
+
+// The product list in use: products.js at first, replaced by the Google Sheet when it loads
+export let ITEMS = build(PRODUCTS);
+export function setProducts(products) { ITEMS = build(products); }
 
 function matchVariant(qc, it) {
   if (!it.vars[0].label) return null;

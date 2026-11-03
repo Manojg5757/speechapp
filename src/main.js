@@ -1,6 +1,7 @@
 import "./style.css";
 import { CATS, SHELVES } from "./products.js";
-import { ITEMS, search, topScore } from "./search.js";
+import { ITEMS, search, topScore, setProducts } from "./search.js";
+import { SHEET_CSV_URL, cachedProducts, fetchProducts } from "./sheet.js";
 import { speak, speechText, hasTamilVoice, line, voicesReady } from "./speak.js";
 import { productImage } from "./icons.js";
 import { CREDITS } from "./credits.js";
@@ -11,19 +12,23 @@ let shown = null, picked = null; // result on the big card, and the variant tapp
 try { if (localStorage.getItem("speakOn") === "0") speakOn = false; } catch (e) {}
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-const rupee = n => "₹" + n.toLocaleString("en-IN");
+const rupee = n => (typeof n === "number" ? "₹" + n.toLocaleString("en-IN") : "₹—");
+const catOf = c => CATS[c] || { ta: c, en: c, color: "var(--hw)" }; // a new category typed in the sheet
+const shelfCount = () => Math.max(SHELVES, ...ITEMS.flatMap(it => it.vars.map(v => v.s || 0)));
 const priceRange = vs => {
-  const ps = vs.map(v => v.p), lo = Math.min(...ps), hi = Math.max(...ps);
+  const ps = vs.map(v => v.p).filter(n => typeof n === "number");
+  if (!ps.length) return rupee();
+  const lo = Math.min(...ps), hi = Math.max(...ps);
   return lo === hi ? rupee(lo) : `${rupee(lo)}–${rupee(hi).slice(1)}`;
 };
 const ICON_SAY = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/></svg>`;
 
 function bestCard(r) {
-  const { it } = r, c = CATS[it.c], vi = picked ?? r.vi, v = vi != null ? it.vars[vi] : null;
+  const { it } = r, c = catOf(it.c), vi = picked ?? r.vi, v = vi != null ? it.vars[vi] : null;
   const vs = it.vars, sameShelf = vs.every(x => x.s === vs[0].s);
   const shelf = v ? v.s : sameShelf ? vs[0].s : "—";
   const onShelves = new Set(v ? [v.s] : vs.map(x => x.s));
-  let strip = ""; for (let i = 1; i <= SHELVES; i++) strip += `<span class="${onShelves.has(i) ? "on" : ""}">${i}</span>`;
+  let strip = ""; for (let i = 1; i <= shelfCount(); i++) strip += `<span class="${onShelves.has(i) ? "on" : ""}">${i}</span>`;
   const others = [...it.names.slice(1), ...it.tas.slice(1)];
 
   return `<article class="label" style="--cat:${c.color}">
@@ -53,7 +58,7 @@ function row(r) {
   const where = v
     ? `S${v.s} · B${v.b}<small>${rupee(v.p)}</small>`
     : `S${shelves}<small>${it.vars.length} options · ${priceRange(it.vars)}</small>`;
-  return `<li><button class="row" data-i="${it.i}" data-vi="${r.vi ?? ""}" style="--cat:${CATS[it.c].color}">
+  return `<li><button class="row" data-i="${it.i}" data-vi="${r.vi ?? ""}" style="--cat:${catOf(it.c).color}">
   ${productImage(v ? v.img : it.img, "thumb", v && v.color) || `<span class="thumb"></span>`}<span class="n">${esc(it.name)}${v && v.label ? ` <span class="vtag">${esc(v.label)}</span>` : ""}</span><span class="t">${esc(it.ta)}</span>
   <span class="where">${where}</span></button></li>`;
 }
@@ -180,6 +185,22 @@ $("credits").innerHTML = CREDITS.map(c =>
   (c.licenseUrl ? `<a href="${esc(c.licenseUrl)}" target="_blank" rel="noopener">${esc(c.license)}</a>` : esc(c.license)) + `</li>`).join("");
 
 $("q").value = "elbow"; render(false);
+
+// ---- Product list from the Google Sheet (see src/sheet.js). Show the last saved copy at
+// once, then fetch the latest; if the phone is offline the saved copy keeps working.
+const sheetNote = $("sheetNote");
+const when = t => new Date(t).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+function useSheet(c, fresh) {
+  setProducts(c.products); render(false);
+  sheetNote.textContent = fresh ? `பட்டியல் புதுப்பிக்கப்பட்டது · List updated ${when(c.at)}` : `சேமித்த பட்டியல் · Saved list from ${when(c.at)}`;
+}
+if (SHEET_CSV_URL) {
+  const saved = cachedProducts();
+  if (saved) useSheet(saved, false);
+  fetchProducts()
+    .then(c => c && useSheet(c, true))
+    .catch(e => { sheetNote.textContent = (saved ? sheetNote.textContent + " · " : "") + "Sheet not loaded: " + e.message; });
+}
 
 // ---- Once a day, greet like a son: "வணக்கம் அம்மா! உங்களுக்கு என்ன உதவி வேணும்?"
 // Browsers usually block speech until the first tap, so if the greeting can't play
