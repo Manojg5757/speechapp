@@ -1,7 +1,7 @@
 import "./style.css";
 import { CATS, SHELVES } from "./products.js";
 import { ITEMS, search, topScore } from "./search.js";
-import { speak, speechText, hasTamilVoice } from "./speak.js";
+import { speak, speechText, hasTamilVoice, line, voicesReady } from "./speak.js";
 
 const $ = id => document.getElementById(id);
 let cat = "all", speakOn = true, lastSpoken = "", timer;
@@ -62,6 +62,7 @@ function say(r, force) {
   const ta = hasTamilVoice();
   speak(speechText(r, picked, ta ? "ta" : "en"), ta);
 }
+const sayLine = (key, ...args) => { const ta = hasTamilVoice(); speak(line(ta ? "ta" : "en", key, ...args), ta); };
 
 function render(speakIt) {
   const raw = $("q").value, items = search(raw, cat);
@@ -70,7 +71,9 @@ function render(speakIt) {
   if (raw.trim() && !items.length) {
     shown = null;
     best.innerHTML = `<div class="empty"><b>“${esc(raw)}” கிடைக்கவில்லை.</b><br>Not found. Try another name, or check the spelling the keyboard wrote.</div>`;
-    list.innerHTML = ""; more.hidden = true; return;
+    list.innerHTML = ""; more.hidden = true;
+    if (speakIt && speakOn && lastSpoken !== "nf:" + raw) { lastSpoken = "nf:" + raw; sayLine("notFound", raw.trim()); }
+    return;
   }
   if (!raw.trim()) {
     shown = null; best.innerHTML = "";
@@ -153,7 +156,10 @@ micBtn.onclick = () => {
     };
     rec.onerror = e => {
       if (e.error === "not-allowed" || e.error === "service-not-allowed" || e.error === "audio-capture") fallback();
-      else if (e.error === "no-speech") fallback("எதுவும் கேட்கவில்லை. மீண்டும் அழுத்தி பேசுங்கள். · Didn't hear anything, tap and try again.");
+      else if (e.error === "no-speech") {
+        fallback("எதுவும் கேட்கவில்லை. மீண்டும் அழுத்தி பேசுங்கள். · Didn't hear anything, tap and try again.");
+        if (speakOn) sayLine("noSpeech");
+      }
       else fallback("மீண்டும் முயற்சிக்கவும். · Try again. (" + e.error + ")");
     };
     rec.onend = () => {
@@ -167,3 +173,22 @@ micBtn.onclick = () => {
 };
 
 $("q").value = "elbow"; render(false);
+
+// ---- Once a day, greet like a son: "வணக்கம் அம்மா! உங்களுக்கு என்ன உதவி வேணும்?"
+// Browsers usually block speech until the first tap, so if the greeting can't play
+// on load it plays on the first tap instead. It only counts as done once it starts.
+const today = new Date().toDateString();
+let greeted = false;
+try { greeted = localStorage.getItem("greetedOn") === today; } catch (e) {}
+if (!greeted && speakOn) {
+  hint.textContent = line("ta", "greet");
+  const done = () => {
+    greeted = true; removeEventListener("pointerdown", onTap, true);
+    try { localStorage.setItem("greetedOn", today); } catch (e) {}
+  };
+  const sayGreet = () => { if (greeted || !speakOn) return; const ta = hasTamilVoice(); speak(line(ta ? "ta" : "en", "greet"), ta, done); };
+  // tapping the mic or a Speak button means she's already asking — don't talk over it
+  const onTap = e => { if (e.target.closest("#mic, #sayBtn, .vchip, .row")) done(); else sayGreet(); };
+  addEventListener("pointerdown", onTap, true);
+  voicesReady().then(sayGreet);
+}
