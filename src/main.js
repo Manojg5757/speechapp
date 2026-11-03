@@ -2,6 +2,7 @@ import "./style.css";
 import { CATS, SHELVES } from "./products.js";
 import { ITEMS, search, topScore } from "./search.js";
 import { speak, speechText, hasTamilVoice, line, voicesReady } from "./speak.js";
+import { productImage } from "./icons.js";
 
 const $ = id => document.getElementById(id);
 let cat = "all", speakOn = true, lastSpoken = "", timer;
@@ -25,13 +26,14 @@ function bestCard(r) {
   const others = [...it.names.slice(1), ...it.tas.slice(1)];
 
   return `<article class="label" style="--cat:${c.color}">
-  <div class="label-top"><span class="cat">${c.ta} · ${c.en}</span>
+  <div class="label-top"><div class="label-text"><span class="cat">${c.ta} · ${c.en}</span>
    <h3 class="pname">${esc(it.name)}${v && v.label ? ` <span class="vbadge">${esc(v.label)}</span>` : ""}</h3>
    <span class="pta">${esc(it.ta)}${v && v.ta ? " · " + esc(v.ta) : ""}</span>
    ${others.length ? `<span class="aka">மற்ற பெயர்கள் · Also called: ${others.map(esc).join(", ")}</span>` : ""}</div>
+   ${productImage(v ? v.img : it.img, "pic", v && v.color)}</div>
   ${r.missing && vi == null ? `<p class="miss"><b>${esc(r.missing.toUpperCase())}</b> இல்லை · not available. கீழே உள்ளவை · Available:</p>` : ""}
   ${it.multi ? `<div class="vars"><span class="k">வகை · Options${vi == null ? " — தேர்வு செய்யுங்கள் · pick one" : ""}</span><div class="vchips">${vs.map((x, i) =>
-    `<button class="vchip" data-vi="${i}" aria-pressed="${i === vi}">${esc(x.label)}<small>${rupee(x.p)}${x.b !== vs[0].b || x.s !== vs[0].s || i === 0 ? ` · S${x.s} B${x.b}` : ""}</small></button>`).join("")}</div></div>` : ""}
+    `<button class="vchip" data-vi="${i}" aria-pressed="${i === vi}"><span>${x.color ? `<i class="swatch" style="background:${x.color}"></i>` : ""}${esc(x.label)}</span><small>${rupee(x.p)}${x.b !== vs[0].b || x.s !== vs[0].s || i === 0 ? ` · S${x.s} B${x.b}` : ""}</small></button>`).join("")}</div></div>` : ""}
   <div class="loc">
    <div><span class="k">அலமாரி<br>Shelf</span><span class="v">${shelf}</span></div>
    <div><span class="k">பெட்டி<br>Box</span><span class="v">${v ? v.b : "—"}</span></div>
@@ -51,7 +53,7 @@ function row(r) {
     ? `S${v.s} · B${v.b}<small>${rupee(v.p)}</small>`
     : `S${shelves}<small>${it.vars.length} options · ${priceRange(it.vars)}</small>`;
   return `<li><button class="row" data-i="${it.i}" data-vi="${r.vi ?? ""}" style="--cat:${CATS[it.c].color}">
-  <span class="n">${esc(it.name)}${v && v.label ? ` <span class="vtag">${esc(v.label)}</span>` : ""}</span><span class="t">${esc(it.ta)}</span>
+  ${productImage(v ? v.img : it.img, "thumb", v && v.color) || `<span class="thumb"></span>`}<span class="n">${esc(it.name)}${v && v.label ? ` <span class="vtag">${esc(v.label)}</span>` : ""}</span><span class="t">${esc(it.ta)}</span>
   <span class="where">${where}</span></button></li>`;
 }
 

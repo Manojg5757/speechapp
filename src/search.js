@@ -127,10 +127,11 @@ export const ITEMS = PRODUCTS.map((p, i) => {
     const full = uniq([v.v, ...list(v.ta), ...list(v.a)].map(canon));
     // a number alone also picks the size: "elbow 1" → 1", "solvent 50" → 50 ml
     const nums = uniq(full.map(f => (f.match(/^(\d+(?:\.\d+)?) [a-z]+$/) || [])[1]));
-    return { label: v.v || "", ta: list(v.ta)[0] || "", s: v.s ?? p.s, b: v.b ?? p.b, p: v.p ?? p.p, u: v.u ?? p.u, full, nums };
+    return { label: v.v || "", ta: list(v.ta)[0] || "", s: v.s ?? p.s, b: v.b ?? p.b, p: v.p ?? p.p, u: v.u ?? p.u,
+      img: v.img || p.img || "", color: v.color || "", full, nums };
   });
   return {
-    i, c: p.c, name: names[0], ta: tas[0] || "", names, tas, vars,
+    i, c: p.c, name: names[0], ta: tas[0] || "", names, tas, vars, img: p.img || "",
     multi: vars.length > 1,
     keys: uniq(all.map(s => stripSize(canon(s)))),
   };
@@ -153,7 +154,7 @@ function matchVariant(qc, it) {
 */
 export function search(query, cat = "all") {
   const qc = canon(query);
-  if (!qc) return ITEMS.filter(it => cat === "all" || it.c === cat).map(it => ({ it, vi: null, s: 0, missing: "" }));
+  if (!qc) return ITEMS.filter(it => cat === "all" || it.c === cat).map(it => ({ it, vi: it.multi ? null : 0, s: 0, missing: "" }));
   const qn = stripSize(qc);
   const out = [];
   for (const it of ITEMS) {
